@@ -1,0 +1,24 @@
++ ------------------------------------ Recommend Applications ------------------------------------ +
+|                                                                                                  |
+| Line 21: For Debian GNU/Linux and those who based on it.                                         |
+|                                                                                                  |
+| Line 22: For Fedora Linux and those who based on it.                                             |
+|                                                                                                  |
+| Line 23: For openSUSE and those who based on it.                                                 |
+|                                                                                                  |
+| Line 24: For Arch Linux and those who based on it.                                               |
+|                                                                                                  |
+| Line 25: Flatpak applications in Flathub                                                         |
+|                                                                                                  |
+| For requests, please create a pull request at <https://github.com/grelintb/grelintb>.            |
+|                                                                                                  |
+| Copyright (C) 2024 MuKonqi (Muhammed S.)                                                         |
+|                                                                                                  |
+| This file is a part of GrelinTB.                                                                 |
+|                                                                                                  |
++ ------------------------------------------------------------------------------------------------ +
+
+
+
+
+

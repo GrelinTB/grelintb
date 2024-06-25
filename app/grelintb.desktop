@@ -1,6 +1,6 @@
 #!/usr/bin/env xdg-open
 [Desktop Entry]
-Version=1.5.0
+Version=2.0.0 (dev)
 Name=GrelinTB
 Encoding=UTF-8
 Comment=Great toolbox for some Linux distributions.

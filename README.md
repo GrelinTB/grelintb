@@ -3,7 +3,9 @@
 <p align="center"><a href="https://github.com/mukonqi/grelintb/releases"><img src="https://img.shields.io/github/downloads/mukonqi/grelintb/total?label=Downloads" alt="Downloads"></img></a></p>
 <p align="center"><a href="https://github.com/mukonqi/grelintb/releases/latest"><img src="https://img.shields.io/github/v/release/mukonqi/grelintb?label=Latest Release" alt="GitHub Release"></a></p>
 
-## Features
+- This is development (dev) branch!
+
+<!-- ## Features
 ### Sidebar
 - A button with hidden style to showing application's name for opening [GrelinTB's website](https://mukonqi.github.io/grelintb/index.html).
 - A button with hidden style to showing version for opening current version's changelog.
@@ -76,7 +78,8 @@
 ![Configure Bashrc and Zshrc (File)](./gallery/Configure%20Bashrc%20and%20Zshrc%20File.png)
 ![Change Computer's Name](./gallery/Change%20Computer's%20Name.png)
 ![About Some Distributions](./gallery/About%20Some%20Distributions.png)
-![Calcer](./gallery/Calcer.png)
+![Calcer](./gallery/Calcer.png) -->
+
 ## Stars
 - Let's give a ⭐ (star) to GrelinTB!
 
