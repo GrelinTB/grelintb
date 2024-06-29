@@ -29,6 +29,7 @@ import time
 import datetime
 import socket
 import platform
+import sqlite3
 
 
 if os.path.isfile("/etc/debian_version"):
@@ -270,7 +271,7 @@ class Startup(QWidget):
                     self.temps_grid  += 1
                     self.temps_number += 1
                     self.temps_labels[self.temps_number] = QLabel(parent = self, alignment = align_center, 
-                                                                  text = f"{self.temps.label or self.temps_hardware}: {_('current')} = {self.temps.current} °C " 
+                                                                  text = f"{self.temps.label or self.temps_hardware}: {_('Current')} = {self.temps.current} °C, " 
                                                                   + f"{_('high')} = {self.temps.high} °C, {_('critical')} = {self.temps.critical} °C")
                     self.layout().addWidget(self.temps_labels[self.temps_number], self.temps_grid, 0, 1, 4)
         
@@ -405,10 +406,80 @@ class Startup(QWidget):
                 self.batt_labels[5].setText( _('Plugged-in: No'))
             
 
-class NotesAndDocuments(QWidget):
+class Notes(QTabWidget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
+        self.home = QWidget(self)
+        self.home.setLayout(QGridLayout(self.home))
+        
+        self.main = QWidget(self.home)
+        self.main.setLayout(QVBoxLayout(self.main))
+        
+        self.details = QWidget(self.home)
+        self.details.setLayout(QHBoxLayout(self.details))
+        self.detail1 = QLabel(parent = self.details, alignment = align_center, 
+                                    text = _('Backed up: '))
+        self.detail2 = QLabel(parent = self.details, alignment = align_center, 
+                                    text = _('Created: '))
+        self.detail3 = QLabel(parent = self.details, alignment = align_center, 
+                                    text = _('Modefied: '))
+        
+        self.list_view = QListView(self.main)
+        self.list_view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.list_view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.list_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
+        
+        with sqlite3.connect("notes.db") as self.db:
+            self.cur = self.db.cursor()
+            self.cur.execute("select name from notes")
+            self.list = []
+            self.fetch = self.cur.fetchall()
+            for i in range(0, len(self.fetch)):
+                self.list.append(self.fetch[i][0])
+            
+            self.model = QStringListModel()
+            self.model.setStringList(self.list)
+            self.list_view.setModel(self.model)
+
+        self.list_view.selectionModel().selectionChanged.connect(
+                                                                 lambda: self.insert(self.list_view.model().itemData(self.list_view.currentIndex())))
+        
+
+        self.side = QWidget(self.home)
+        self.side.setFixedWidth(144)
+        self.side.setLayout(QVBoxLayout(self.side))
+        
+        
+        self.details.layout().addWidget(self.detail1)
+        self.details.layout().addWidget(self.detail2)
+        self.details.layout().addWidget(self.detail3)
+        self.main.layout().addWidget(self.details)
+        self.main.layout().addWidget(self.list_view)
+        self.home.layout().addWidget(self.main, 0, 0)
+        self.home.layout().addWidget(self.side, 0, 1)
+        
+        self.addTab(self.home, _('Home'))
+        self.setTabsClosable(True)
+        
+        self.tabCloseRequested.connect(self.close)
+         
+    def insert(self, index):
+        with sqlite3.connect("notes.db") as self.db:
+            self.cur = self.db.cursor()
+            self.cur.execute(f"select * from notes where name = '{index[0]}'")
+            self.fetch = self.cur.fetchone()
+            
+            if self.fetch[2] != "":
+                self.detail1.setText(f"{_('Backed up')}: Yes")
+            else:
+                self.detail1.setText(f"{_('Backed up')}: No")
+            self.detail2.setText(f"{_('Created')}: {self.fetch[3]}")
+            self.detail3.setText(f"{_('Edited')}: {self.fetch[4]}")
+                 
+    def close(self, index):
+        if index != 0:
+            pass
         
 class Store(QWidget):
     def __init__(self, **kwargs):
@@ -440,8 +511,8 @@ class MainWindow(QMainWindow):
         self.tabview.addTab(self.startup, 
                             QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirHomeIcon)), _("Startup"))
         
-        self.tabview.addTab(NotesAndDocuments(), 
-                            QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon)), _("Notes and Documents"))
+        self.tabview.addTab(Notes(), 
+                            QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon)), _("Notes"))
         
         self.tabview.addTab(Store(parent = self), 
                             QIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)), _("Store"))
@@ -462,8 +533,8 @@ class MainWindow(QMainWindow):
         self.startup = self.menuBar().addMenu(_('Startup'))
         self.startup.addAction(_('Startup'))
         
-        self.nad = self.menuBar().addMenu(_('Notes and Documents'))
-        self.nad.addAction(_('Notes and Documents'))
+        self.nad = self.menuBar().addMenu(_('Notes'))
+        self.nad.addAction(_('Notes'))
         
         self.store = self.menuBar().addMenu(_('Store'))
         self.store.addAction(_('Packages'))
