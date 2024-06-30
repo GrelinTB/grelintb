@@ -421,7 +421,7 @@ class Notes(QTabWidget):
         
         self.setStatusTip(_('Tip: For a new note, just type a name below.'))
         
-        with sqlite3.connect("notes.db") as self.notes_db_init:
+        with sqlite3.connect("notes.db") as self.db_init:
             self.sql_init = """
             CREATE TABLE IF NOT EXISTS notes (
                 name TEXT NOT NULL PRIMARY KEY,
@@ -430,16 +430,15 @@ class Notes(QTabWidget):
                 created TEXT NOT NULL,
                 edited TEXT
             );"""
-            self.notes_cur_init = self.notes_db_init.cursor()
-            self.notes_cur_init.execute(self.sql_init)
-            self.notes_db_init.commit()
+            self.cur_init = self.db_init.cursor()
+            self.cur_init.execute(self.sql_init)
+            self.db_init.commit()
         
         self.widgets = {}
         self.textedits = {}
         self.contents = {}
         self.outputs = {}
         self.buttons = {}
-        self.are_news = {}
         
         self.home = QWidget(self)
         self.home.setLayout(QGridLayout(self.home))
@@ -478,19 +477,19 @@ class Notes(QTabWidget):
         self.opener.clicked.connect(lambda: self.open(self.entry.text()))
         
         self.renamer = QPushButton(parent = self.side, text = _('Rename note'))
-        self.renamer.clicked.connect(self.rename)
+        self.renamer.clicked.connect(lambda: self.rename(self.entry.text()))
         
         self.deleter = QPushButton(parent = self.side, text = _('Delete content'))
-        self.deleter.clicked.connect(self.delete)
+        self.deleter.clicked.connect(lambda: self.delete(self.entry.text()))
 
         self.backup_shower = QPushButton(parent = self.side, text = _('Show backup'))
-        self.backup_shower.clicked.connect(self.show_backup)
+        self.backup_shower.clicked.connect(lambda: self.show_backup(self.entry.text()))
 
         self.backup_loader = QPushButton(parent = self.side, text = _('Load backup'))
-        self.backup_loader.clicked.connect(self.load_backup)
+        self.backup_loader.clicked.connect(lambda: self.load_backup(self.entry.text()))
         
         self.backup_deleter = QPushButton(parent = self.side, text = _('Delete backup'))
-        self.backup_deleter.clicked.connect(self.delete_backup)
+        self.backup_deleter.clicked.connect(lambda: self.delete_backup(self.entry.text()))
         
         self.details.layout().addWidget(self.detail1)
         self.details.layout().addWidget(self.detail2)
@@ -520,10 +519,10 @@ class Notes(QTabWidget):
             self.removeTab(index)
          
     def insert(self, name):
-        with sqlite3.connect("notes.db") as self.notes_db_insert:
-            self.notes_cur_insert = self.notes_db_insert.cursor()
-            self.notes_cur_insert.execute(f"select * from notes where name = '{name[0]}'")
-            self.fetch_insert = self.notes_cur_insert.fetchone()
+        with sqlite3.connect("notes.db") as self.db_insert:
+            self.cur_insert = self.db_insert.cursor()
+            self.cur_insert.execute(f"select * from notes where name = '{name[0]}'")
+            self.fetch_insert = self.cur_insert.fetchone()
         self.entry.setText(self.fetch_insert[0])
         if self.fetch_insert[2] != "":
             self.detail1.setText(f"{_('Backed up')}: Yes")
@@ -535,25 +534,26 @@ class Notes(QTabWidget):
     def refresh(self):
         self.list = []
         
-        with sqlite3.connect("notes.db") as self.notes_db_refresh:
-            self.notes_cur_refresh = self.notes_db_refresh.cursor()
-            self.notes_cur_refresh.execute("select name from notes")
-            self.fetch_refresh = self.notes_cur_refresh.fetchall()
+        with sqlite3.connect("notes.db") as self.db_refresh:
+            self.cur_refresh = self.db_refresh.cursor()
+            self.cur_refresh.execute("select name from notes")
+            self.fetch_refresh = self.cur_refresh.fetchall()
         
         for i in range(0, len(self.fetch_refresh)):
             self.list.append(self.fetch_refresh[i][0])
 
         self.model.setStringList(self.list)
         
-    def control(self, name):
+    def control(self, name, mode = "norml"):
         try:
-            with sqlite3.connect("notes.db") as self.notes_db_control:
-                self.notes_cur_control = self.notes_db_control.cursor()
-                self.notes_cur_control.execute(f"select * from notes where name = '{name}'")
-                self.fetch_control = self.notes_cur_control.fetchone()[0]
+            with sqlite3.connect("notes.db") as self.db_control:
+                self.cur_control = self.db_control.cursor()
+                self.cur_control.execute(f"select * from notes where name = '{name}'")
+                self.fetch_control = self.cur_control.fetchone()[0]
             return True
-        except TypeError as e:
-            QMessageBox.critical(self, _('Error'), _(f'There is note note called {name}.'))
+        except TypeError:
+            if mode == "normal":
+                QMessageBox.critical(self, _('Error'), _('There is note note called {name}.').format(name = name))
             return False
             
     def save(self, name, content, date):
@@ -561,46 +561,46 @@ class Notes(QTabWidget):
             return
         
         try:
-            with sqlite3.connect("notes.db") as self.notes_db_save1:
-                self.notes_cur_save1 = self.notes_db_save1.cursor()
-                self.notes_cur_save1.execute(f"select content from notes where name = '{name}'")
-                self.fetch_save1 = self.notes_cur_save1.fetchone()[0]
+            with sqlite3.connect("notes.db") as self.db_save1:
+                self.cur_save1 = self.db_save1.cursor()
+                self.cur_save1.execute(f"select content from notes where name = '{name}'")
+                self.fetch_save1 = self.cur_save1.fetchone()[0]
             
-            with sqlite3.connect("notes.db") as self.notes_db_save2:
+            with sqlite3.connect("notes.db") as self.db_save2:
                 self.sql_save2 = f"""update notes set content = '{content}', backup = '{self.fetch_save1}',
                 edited = '{date}' where name = '{name}'"""
-                self.notes_cur_save2 = self.notes_db_save2.cursor()
-                self.notes_cur_save2.execute(self.sql_save2)
-                self.notes_db_save2.commit()
+                self.cur_save2 = self.db_save2.cursor()
+                self.cur_save2.execute(self.sql_save2)
+                self.db_save2.commit()
 
         except TypeError:
-            with sqlite3.connect("notes.db") as self.notes_db_save3:
+            with sqlite3.connect("notes.db") as self.db_save3:
                 self.sql_save3 = f"""insert into notes (name, content, backup, created, edited) 
                 values ('{name}', '{content}', '', '{date}', '{date}')"""
-                self.notes_cur_save3 = self.notes_db_save3.cursor()
-                self.notes_cur_save3.execute(self.sql_save3)
-                self.notes_db_save3.commit()
+                self.cur_save3 = self.db_save3.cursor()
+                self.cur_save3.execute(self.sql_save3)
+                self.db_save3.commit()
     
-        with sqlite3.connect("notes.db") as self.notes_db_save4:
-            self.notes_cur_save4 = self.notes_db_save4.cursor()
-            self.notes_cur_save4.execute(f"select content from notes where name = '{name}'")
-            self.fetch_save4 = self.notes_cur_save4.fetchone()[0]
+        with sqlite3.connect("notes.db") as self.db_save4:
+            self.cur_save4 = self.db_save4.cursor()
+            self.cur_save4.execute(f"select content from notes where name = '{name}'")
+            self.fetch_save4 = self.cur_save4.fetchone()[0]
 
         if self.fetch_save4 == content:
-            QMessageBox.information(self, _('Successful'), _(f'Note {name} saved.'))
+            QMessageBox.information(self, _('Successful'), _('{name} note saved.').format(name = name))
             self.refresh()
 
         else:
-            QMessageBox.critical(self, _('Error'), _(f'Failed to save note {name}.'))
+            QMessageBox.critical(self, _('Error'), _('Failed to save {name} note.').format(name = name))
     
     def open(self, name):
         if name == "" or name == None:
-            QMessageBox.critical(self, _('Error'), _(f'Note name can not be blank.'))
+            QMessageBox.critical(self, _('Error'), _('Note name can not be blank.'))
             return
             
-        with sqlite3.connect("notes.db") as self.notes_db_open:
-            self.notes_cur_open = self.notes_db_open.cursor()
-            self.notes_cur_open.execute(f"select content from notes where name = '{name}'")
+        with sqlite3.connect("notes.db") as self.db_open:
+            self.cur_open = self.db_open.cursor()
+            self.cur_open.execute(f"select content from notes where name = '{name}'")
             
             self.widgets[name] = QWidget(self)
             self.widgets[name].setLayout(QVBoxLayout(self.widgets[name]))
@@ -623,77 +623,151 @@ class Notes(QTabWidget):
             self.widgets[name].layout().addWidget(self.buttons[name])
             
             try:
-                self.fetch_open = self.notes_cur_open.fetchone()[0]
+                self.fetch_open = self.cur_open.fetchone()[0]
                 self.contents[name].setPlainText(self.fetch_open)
                 self.outputs[name].setMarkdown(self.fetch_open)
             except TypeError:
-                self.are_news[name] = True
+                pass
 
             self.addTab(self.widgets[name], name)
             self.setCurrentWidget(self.widgets[name])
     
-    def rename(self):
-        self.old_name = self.entry.text()
+    def rename(self, name):
+        if name == "" or name == None:
+            QMessageBox.critical(self, _('Error'), _('Note name can not be blank.'))
+            return        
         
-        if self.control(self.old_name) == False:
+        if self.control(name) == False:
             return
         
-        self.new_name, self.completed = QInputDialog.getText(self, f"Rename {self.old_name} Note", f"Please enter a new name for {self.old_name} below.")
+        self.new_name, self.completed = QInputDialog.getText(self, 
+                                                             f"Rename {name} Note", f"Please enter a new name for {name} below.")
         if self.new_name != "" and self.new_name != None and self.completed == True:
-            with sqlite3.connect("notes.db") as self.notes_db_rename1:
-                self.sql_rename1 = f"update notes set name = '{self.new_name}' where name = '{self.old_name}'"
-                self.notes_cur_rename1 = self.notes_db_rename1.cursor()
-                self.notes_cur_rename1.execute(self.sql_rename1)
-                self.notes_db_rename1.commit()
+            with sqlite3.connect("notes.db") as self.db_rename1:
+                self.sql_rename1 = f"update notes set name = '{self.new_name}' where name = '{name}'"
+                self.cur_rename1 = self.db_rename1.cursor()
+                self.cur_rename1.execute(self.sql_rename1)
+                self.db_rename1.commit()
 
             try:
-                with sqlite3.connect("notes.db") as self.notes_db_rename2:
-                    self.notes_cur_rename2 = self.notes_db_rename2.cursor()
-                    self.notes_cur_rename2.execute(f"select * from notes where name = '{self.new_name}'")
-                    self.notes_db_rename2.commit()
+                with sqlite3.connect("notes.db") as self.db_rename2:
+                    self.cur_rename2 = self.db_rename2.cursor()
+                    self.cur_rename2.execute(f"select * from notes where name = '{self.new_name}'")
+                    self.db_rename2.commit()
                 
-                QMessageBox.information(self, _('Successful'), _(f'Note {self.old_name} renamed as {self.new_name}.'))
+                QMessageBox.information(self, _('Successful'), _('{name} note renamed as {new_name}.').format(name = name, new_name = self.new_name))
                 self.refresh()
             except TypeError:
-                QMessageBox.critical(self, _('Error'), _(f'Failed to rename note {self.old_name}.'))
+                QMessageBox.critical(self, _('Error'), _('Failed to rename {name} note.').format(name = name))
         else:
-            QMessageBox.critical(self, _('Error'), _(f'Failed to rename note {self.old_name}.'))
+            QMessageBox.critical(self, _('Error'), _('Failed to rename {name} note.').format(name = name))
     
-    def delete(self):
-        self.delete_name = self.entry.text()
+    def delete(self, name):
+        if name == "" or name == None:
+            QMessageBox.critical(self, _('Error'), _('Note name can not be blank.'))
+            return        
         
-        if self.control(self.delete_name) == False:
+        if self.control(name) == False:
             return
         
-        with sqlite3.connect("notes.db") as self.notes_db_delete1:
-            self.notes_cur_delete1 = self.notes_db_delete1.cursor()
-            self.notes_cur_delete1.execute(f"select content from notes where name = '{self.delete_name}'")
-            self.fetch_delete1 = self.notes_cur_delete1.fetchone()[0]
+        with sqlite3.connect("notes.db") as self.db_delete1:
+            self.cur_delete1 = self.db_delete1.cursor()
+            self.cur_delete1.execute(f"select content from notes where name = '{name}'")
+            self.fetch_delete1 = self.cur_delete1.fetchone()[0]
         
-        with sqlite3.connect("notes.db") as self.notes_db_delete2:
-            self.notes_cur_delete2 = self.notes_db_delete2.cursor()
-            self.notes_cur_delete2.execute(f"update notes set content = '', backup = '{self.fetch_delete1}' where name = '{self.delete_name}'")
-            self.notes_db_delete2.commit()
+        with sqlite3.connect("notes.db") as self.db_delete2:
+            self.cur_delete2 = self.db_delete2.cursor()
+            self.cur_delete2.execute(
+                f"update notes set content = '', backup = '{self.fetch_delete1}' where name = '{name}'")
+            self.db_delete2.commit()
         
-        with sqlite3.connect("notes.db") as self.notes_db_delete3:
-            self.notes_cur_delete3 = self.notes_db_delete3.cursor()
-            self.notes_cur_delete3.execute(f"select content from notes where name = '{self.delete_name}'")
-            self.fetch_delete3 = self.notes_cur_delete3.fetchone()[0]
+        with sqlite3.connect("notes.db") as self.db_delete3:
+            self.cur_delete3 = self.db_delete3.cursor()
+            self.cur_delete3.execute(f"select content from notes where name = '{name}'")
+            self.fetch_delete3 = self.cur_delete3.fetchone()[0]
     
         if self.fetch_delete3 != None:
-            QMessageBox.information(self, _('Successful'), _(f'Content of note {self.delete_name} deleted.'))
+            QMessageBox.information(self, _('Successful'), _('Content of {name} note deleted.').format(name = name))
+        else:
+            QMessageBox.critical(self, _('Error'), _('Failed to delete content of {name} note.').format(name = name))
+    
+    def show_backup(self, name):
+        if name == "" or name == None:
+            QMessageBox.critical(self, _('Error'), _('Note name can not be blank.'))
+            return
+        
+        if self.control(name) == False:
+            return
+            
+        with sqlite3.connect("notes.db") as self.db_showb:
+            self.cur_showb = self.db_showb.cursor()
+            self.cur_showb.execute(f"select backup from notes where name = '{name}'")
+            
+            self.widgets[name] = QWidget(self)
+            self.widgets[name].setLayout(QVBoxLayout(self.widgets[name]))
+            
+            self.outputs[name] = QTextEdit(parent = self.widgets[name], readOnly = True)
+            
+            self.widgets[name].layout().addWidget(self.outputs[name])
+            
+            try:
+                self.fetch_showb = self.cur_showb.fetchone()[0]
+                self.outputs[name].setMarkdown(self.fetch_showb)
+            except TypeError:
+                pass
+
+            self.addTab(self.widgets[name], name)
+            self.setCurrentWidget(self.widgets[name])
+    
+    def load_backup(self, name):
+        if name == "" or name == None:
+            QMessageBox.critical(self, _('Error'), _('Note name can not be blank.'))
+            return
+        
+        if self.control(name) == False:
+            return
+        
+        with sqlite3.connect("notes.db") as self.db_loadb1:
+            self.cur_loadb1 = self.db_loadb1.cursor()
+            self.cur_loadb1.execute(f"select content, backup from notes where name = '{name}'")
+            self.fetch_loadb1 = self.cur_loadb1.fetchone()
+                        
+        with sqlite3.connect("notes.db") as self.db_loadb2:
+            self.sql_loadb2 = f"""update notes set content = '{self.fetch_loadb1[1]}', 
+            backup = '{self.fetch_loadb1[0]}' where name = '{name}'"""
+            self.cur_loadb2 = self.db_loadb2.cursor()
+            self.cur_loadb2.execute(self.sql_loadb2)
+            self.db_loadb2.commit()
+            
+        with sqlite3.connect("notes.db") as self.db_loadb3:
+            self.cur_loadb3 = self.db_loadb3.cursor()
+            self.cur_loadb3.execute(f"select content, backup from notes where name = '{name}'")
+            self.fetch_loadb3 = self.cur_loadb3.fetchone()
+            
+        if self.fetch_loadb1[1] == self.fetch_loadb3[0]:
+            QMessageBox.information(self, _('Successful'), _('{name} note restored.').format(name = name))
+        else:
+            QMessageBox.critical(self, _('Error'), _('Failed to restore {name} note.').format(name = name))
+                       
+    def delete_backup(self, name):
+        if name == "" or name == None:
+            QMessageBox.critical(self, _('Error'), _('Note name can not be blank.'))
+            return
+        
+        if self.control(name) == False:
+            return
+        
+        with sqlite3.connect("notes.db") as self.db_deleteb1:
+            self.cur_deleteb1 = self.db_deleteb1.cursor()
+            self.cur_deleteb1.execute(f"delete from notes where name = '{name}'")
+            self.db_deleteb1.commit()
+            
+        if self.control(name) == False:
+            QMessageBox.information(self, _('Successful'), _('{name} note deleted from database.').format(name = name))
             self.refresh()
         else:
-            QMessageBox.critical(self, _('Error'), _(f'Failed to delete content of {self.delete_name} note.'))
-    
-    def show_backup(self):
-        pass
-    
-    def load_backup(self):
-        pass
-    
-    def delete_backup(self):
-        pass
+            QMessageBox.critical(self, _('Error'), _('Failed to delete {name} note from database.').format(name = name))
+        
         
 class Store(QWidget):
     def __init__(self, **kwargs):
