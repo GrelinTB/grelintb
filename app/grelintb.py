@@ -549,10 +549,7 @@ class Notes(QTabWidget):
                 QMessageBox.critical(self, _('Error'), _('There is note note called {name}.').format(name = name))
             return False
         
-    def save(self, name, content, date):        
-        if self.control(name) == False:
-            return
-        
+    def save(self, name, content, date):                
         try:
             with sqlite3.connect("notes.db", timeout=10.0) as self.db_save1:
                 self.cur_save1 = self.db_save1.cursor()
