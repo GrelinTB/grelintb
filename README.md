@@ -3,7 +3,7 @@
 <p align="center"><a href="https://github.com/mukonqi/grelintb/releases"><img src="https://img.shields.io/github/downloads/mukonqi/grelintb/total?label=Downloads" alt="Downloads"></img></a></p>
 <p align="center"><a href="https://github.com/mukonqi/grelintb/releases/latest"><img src="https://img.shields.io/github/v/release/mukonqi/grelintb?label=Latest Release" alt="GitHub Release"></a></p>
 
-- This is development (dev) branch!
+- Warninig, this is development (dev) branch!
 
 <!-- ## Features
 ### Sidebar
@@ -83,7 +83,7 @@
 ## Stars
 - Let's give a ⭐ (star) to GrelinTB!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=mukonqi/grelintb&type=Date)](https://star-history.com/#mukonqi/grelintb&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=grelintb/grelintb&type=Date)](https://star-history.com/#grelintb/grelintb&Date)
 ## Copyright Notification, License, Credit
 - Copyright &copy; 2024 MuKonqi (Muhammed S.)
 - GNU General Public License, Version 3.0 or later
